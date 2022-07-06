@@ -1,4 +1,5 @@
 ﻿using Telegram.Bot;
+using Telegram.Bot.Polling;
 
 namespace TelegramBot.Services
 {
@@ -6,11 +7,13 @@ namespace TelegramBot.Services
     {
         private readonly ILogger _logger;
         private readonly TelegramBotClient _botClient;
+        private readonly IUpdateHandler _handler;
 
-        public BackgroundServices(ILogger<BackgroundServices> logger ,TelegramBotClient botClient)
+        public BackgroundServices(ILogger<BackgroundServices> logger ,TelegramBotClient botClient, IUpdateHandler handler)
         {
             _logger = logger;
             _botClient = botClient;
+            _handler = handler;
 
         }
 
@@ -23,7 +26,17 @@ namespace TelegramBot.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var bot = await _botClient.GetMeAsync();
+
             _logger.LogInformation($"Bot Started Successfully {bot.Username}");
+
+            _botClient.StartReceiving(
+                _handler.HandleUpdateAsync,
+                _handler.HandlePollingErrorAsync,
+                new ReceiverOptions()
+                {
+                    ThrowPendingUpdates = true
+                },
+                stoppingToken);
         }
     }
 }
